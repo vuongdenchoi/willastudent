@@ -1,0 +1,39 @@
+{
+    "e": [
+        {
+            "c": [
+                0,
+                0,
+                736,
+                1041
+            ],
+            "r": "Overly dense visual clutter with competing elements (multiple photos, icons, doodles, text, patterned background) creates no clear focal point — violates (figure-ground must be clear at a glance) and (framing is editorial choice), making the composition feel chaotic and unprofessional.",
+            "s": "critical",
+            "g": "poster_design"
+        },
+        {
+            "c": [
+                376,
+                401,
+                606,
+                498
+            ],
+            "r": "The text 'i swear she's an angel' is placed on a low-contrast, semi-transparent beige overlay that blends with the background and lacks sufficient contrast for legibility at a glance — violates figure-ground clarity and undermines the message’s readability.",
+            "s": "major",
+            "g": "poster_design"
+        }
+    ],
+    "isz": {
+        "w": 736,
+        "h": 1041
+    },
+    "te": 2,
+    "ss": {
+        "minor": 0,
+        "major": 1,
+        "critical": 1
+    },
+    "inputtoken": 2870,
+    "outputtoken": 318,
+    "totaltoken": 3188
+}

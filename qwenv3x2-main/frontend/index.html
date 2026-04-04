@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Check AI – Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #212121;
+      --bg-header: #171717;
+      --bg-user: #2f2f2f;
+      --bg-ai: #212121;
+      --border: #424242;
+      --text: #ececec;
+      --accent: #10a37f;
+      --rad: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body,
+    html {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      height: 60px;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #fff;
+      z-index: 10;
+    }
+
+    header span {
+      color: var(--accent);
+      margin-left: 6px;
+    }
+
+    /* Main Timeline */
+    #chat-container {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      display: flex;
+      padding: 24px;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .message.user {
+      background: var(--bg-user);
+    }
+
+    .message.ai {
+      background: var(--bg-ai);
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .user .avatar {
+      background: #555;
+    }
+
+    .ai .avatar {
+      background: var(--accent);
+      color: white;
+    }
+
+    .content {
+      flex: 1;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .loading-pulse {
+      animation: pulse 1.5s infinite;
+      color: #888;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0.5;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.5;
+      }
+    }
+
+    /* Attachments in Chat */
+    .chat-attachment {
+      max-width: 300px;
+      max-height: 300px;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: block;
+      border: 1px solid var(--border);
+    }
+
+    /* Analysis Card (Canvas + Error List) */
+    .analysis-card {
+      background: #2f2f2f;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 14px;
+      overflow: hidden;
+      max-width: 600px;
+    }
+
+    .analysis-card canvas {
+      width: 100%;
+      display: block;
+      background: #000;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .error-list {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .error-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #3c3c3c;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .error-item .reason {
+      flex: 1;
+      margin: 0 10px;
+    }
+
+    .error-tag {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .tag-minor {
+      background: #f1c40f22;
+      color: #f1c40f;
+    }
+
+    .tag-major {
+      background: #e67e2222;
+      color: #e67e22;
+    }
+
+    .tag-critical {
+      background: #e74c3c22;
+      color: #e74c3c;
+    }
+
+    .zoom-btn {
+      background: var(--border);
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      transition: background .2s;
+    }
+
+    .zoom-btn:hover {
+      background: #555;
+      color: #fff;
+    }
+
+    /* Input Area */
+    #input-zone {
+      padding: 20px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: flex-end;
+      width: 100%;
+      max-width: 800px;
+      background: #303030;
+      border: 1px solid #4a4a4a;
+      border-radius: 16px;
+      padding: 8px 12px;
+      position: relative;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: #666;
+    }
+
+    .attach-btn {
+      background: none;
+      border: none;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .attach-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    #chat-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 10px;
+      resize: none;
+      min-height: 44px;
+      max-height: 200px;
+      outline: none;
+      line-height: 1.5;
+    }
+
+    .send-btn {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      align-self: flex-end;
+      margin-bottom: 2px;
+    }
+
+    .send-btn:hover {
+      background: #0e8c6c;
+    }
+
+    /* File Preview in Input */
+    #file-preview-wrap {
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      margin-bottom: 10px;
+      background: #303030;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #file-preview-wrap img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .remove-file {
+      background: rgba(255, 0, 0, 0.5);
+      border: none;
+      color: #fff;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div>Design Check <span>AI</span></div>
+  </header>
+
+  <div id="chat-container">
+    <div class="message ai">
+      <div class="avatar">🔍</div>
+      <div class="content">
+        Xin chào! Tôi là Trợ lý phân tích Thiết kế AI. Bạn có thể up một bức poster, logo hoặc gõ câu hỏi vào bên dưới
+        nhé!
+      </div>
+    </div>
+  </div>
+
+  <div id="input-zone">
+    <div class="input-wrapper">
+
+      <div id="file-preview-wrap">
+        <img id="file-preview" src="" />
+        <button class="remove-file" onclick="clearFile()">×</button>
+      </div>
+
+      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewFile(event)" />
+      <button class="attach-btn" onclick="document.getElementById('file-input').click()">📎</button>
+
+      <textarea id="chat-input" placeholder="Nhắn tin cho Design Check AI..." rows="1" oninput="autoGrow(this)"
+        onkeydown="checkEnter(event)"></textarea>
+
+      <button class="send-btn" onclick="sendMessage()">Gửi</button>
+    </div>
+  </div>
+
+  <script>
+    let sessionId = localStorage.getItem('chat_session');
+    if (!sessionId) {
+      sessionId = "sess_" + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('chat_session', sessionId);
+    }
+
+    let selectedFile = null;
+
+    function autoGrow(el) {
+      el.style.height = "5px";
+      el.style.height = (el.scrollHeight) + "px";
+    }
+
+    function previewFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      selectedFile = file;
+      const url = URL.createObjectURL(file);
+      document.getElementById("file-preview").src = url;
+      document.getElementById("file-preview-wrap").style.display = "flex";
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      document.getElementById("file-input").value = "";
+      document.getElementById("file-preview-wrap").style.display = "none";
+    }
+
+    function checkEnter(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function createBubble(role, htmlContent) {
+      const container = document.getElementById("chat-container");
+      const div = document.createElement("div");
+      div.className = `message ${role}`;
+      const avatar = role === 'user' ? '👤' : '🔍';
+      div.innerHTML = `
+      <div class="avatar">${avatar}</div>
+      <div class="content">${htmlContent}</div>
+    `;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+      return div.querySelector('.content');
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("chat-input");
+      const text = input.value.trim();
+      if (!text && !selectedFile) return;
+
+      // 1. Vẽ User Bubble
+      let userHtml = text;
+      if (selectedFile) {
+        const url = URL.createObjectURL(selectedFile);
+        userHtml += `<br><img class="chat-attachment" src="${url}" />`;
+      }
+      createBubble("user", userHtml);
+
+      // Chuẩn bị form
+      const formData = new FormData();
+      formData.append("session_id", sessionId);
+      formData.append("message", text);
+      if (selectedFile) {
+        formData.append("file", selectedFile);
+        // Dùng closure để giữ file vẽ canvas
+        const closureFile = selectedFile;
+        clearFile();
+        input.value = "";
+        autoGrow(input);
+
+        const aiContent = createBubble("ai", '<div class="loading-pulse">Đang phân tích hình ảnh (có thể tốn 5-15s)...</div>');
+        callBackend(formData, aiContent, closureFile);
+      } else {
+        input.value = "";
+        autoGrow(input);
+        const aiContent = createBubble("ai", '<div class="loading-pulse">Đang rà soát...</div>');
+        callBackend(formData, aiContent, null);
+      }
+    }
+
+    async function callBackend(formData, contentDiv, uploadedFile) {
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          body: formData
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+
+        // Render dữ liệu trả về
+        contentDiv.innerHTML = data.reply.replace(/\n/g, "<br>");
+
+        // Nếu có Zoom Image
+        if (data.type === "zoom" && data.image_data_url) {
+          contentDiv.innerHTML += `<br><img class="chat-attachment" style="border-color:#ff4d6d;border-width:2px;border-style:dashed;" src="${data.image_data_url}" />`;
+        }
+
+        // Nếu có Analysis Data -> Vẽ DOM Canvas
+        if (data.type === "analysis" && data.analysis_data && uploadedFile) {
+          renderAnalysisCard(contentDiv, data.analysis_data, uploadedFile);
+        }
+
+      } catch (err) {
+        contentDiv.innerHTML = `<span style="color:#e74c3c;">Lỗi hệ thống: ${err.message}</span>`;
+      }
+      document.getElementById("chat-container").scrollTop = document.getElementById("chat-container").scrollHeight;
+    }
+
+    function renderAnalysisCard(parentDiv, analysisData, file) {
+      const errors = analysisData.e || [];
+
+      const card = document.createElement('div');
+      card.className = "analysis-card";
+
+      // Canvas
+      const canvas = document.createElement("canvas");
+      card.appendChild(canvas);
+
+      // Error list
+      const list = document.createElement('div');
+      list.className = "error-list";
+      if (errors.length === 0) {
+        list.innerHTML = `<div style="color:var(--accent);padding:10px;">✅ Không phát hiện lỗi thiết kế nào!</div>`;
+      } else {
+        errors.forEach((err, i) => {
+          list.innerHTML += `
+          <div class="error-item">
+            <span style="background:#555;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;">${i + 1}</span>
+            <div class="reason">${err.r}</div>
+            <span class="error-tag tag-${err.s}">${err.s}</span>
+            <button class="zoom-btn" onclick="requestZoom(${i})">🔍 Zoom</button>
+          </div>
+        `;
+        });
+      }
+      card.appendChild(list);
+      parentDiv.appendChild(card);
+
+      // Vẽ box lên canvas
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        errors.forEach((err, i) => {
+          const [x1, y1, x2, y2] = err.c || err.box_2d;
+          ctx.strokeStyle = "#ff4d6d";
+          ctx.lineWidth = Math.max(2, canvas.width / 400);
+          ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+          // Vẽ số
+          ctx.fillStyle = "#ff4d6d";
+          ctx.beginPath();
+          ctx.arc(x1 + 15, y1 + 15, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 16px Inter";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(i + 1, x1 + 15, y1 + 15);
+        });
+        // Scroll down sau khi vẽ xong
+        document.getElementById("chat-container").scrollTop = document.getElementById("chat-container").scrollHeight;
+      };
+    }
+
+    function requestZoom(errorIndex) {
+      const aiContent = createBubble("ai", '<div class="loading-pulse">Đang cắt vùng ảnh...</div>');
+      const formData = new FormData();
+      formData.append("session_id", sessionId);
+      formData.append("action_type", "zoom");
+      formData.append("error_index", errorIndex);
+      callBackend(formData, aiContent, null);
+    }
+  </script>
+</body>
+
+</html>
